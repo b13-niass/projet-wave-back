@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -27,7 +27,7 @@ model User {
   cni              String
   date_naissance   DateTime
   code_verification String
-  
+
   role             Role
   statut_compte    String
   qrcode           String?

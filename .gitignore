@@ -1,0 +1,9 @@
+node_modules/*
+.env
+RAM.js
+dist/tmp/*
+.vscode/*
+.idea/*
+dist/seeds.js
+dist/*
+tmp/*

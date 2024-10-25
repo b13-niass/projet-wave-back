@@ -1,0 +1,275 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+// Schema Prisma pour le projet
+
+model User {
+  id               Int       @id @default(autoincrement())
+  nom              String
+  prenom           String
+  password         String
+  adresse          String
+  telephone        String
+  file_cni         String
+  cni              String
+  date_naissance   DateTime
+  code_verification String
+  
+  role             Role
+  statut_compte    String
+  qrcode           String?
+  wallet           Wallet?
+  pays_id  Int      
+  pays     Pays     @relation(fields: [pays_id], references: [id])
+  transactionsSent Transaction[] @relation("SentTransactions")
+  transactionsReceived Transaction[] @relation("ReceivedTransactions")
+  notified    Notification[] @relation("Notified")
+  notifier    Notification[] @relation("Notifier")
+  fournisseur     Fournisseur?
+  contratsBanque   ContratBanque[]
+  userBanques      UserBanque[]
+  agence           Agence?
+  contratsFournisseur ContratFournisseur[]
+  contact             contact[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  @@map("users")
+
+}
+model Pays{
+  id             Int       @id @default(autoincrement())
+  nom           String
+  indicatif String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user            User[]
+}
+model Agence {
+  id             Int       @id @default(autoincrement())
+  longitude         Float
+  latitude       Float
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user_id  Int      @unique
+  user     User     @relation(fields: [user_id], references: [id])
+
+}
+model Transaction {
+  id               Int       @id @default(autoincrement())
+  sender_id        Int
+  montant_envoye          Float
+  montant_recus          Float
+  type_transaction TypeTransaction
+  statut           StatutTransaction
+  frais_id         Int?
+  receiver_id      Int
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  sender           User      @relation("SentTransactions", fields: [sender_id], references: [id])
+  receiver         User      @relation("ReceivedTransactions", fields: [receiver_id], references: [id])
+  frais            Frais?    @relation(fields: [frais_id], references: [id])
+  paiement         Paiement?
+  notification     Notification?
+  @@map("transactions")
+}
+
+model contact {
+  id         Int      @id @default(autoincrement())
+  nom        String
+  telephone  String
+  user_id    Int
+  user       User      @relation(fields: [user_id], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  @@map("contacts")
+
+
+
+}
+
+
+model Frais {
+  id      Int     @id @default(autoincrement())
+  valeur  Float   @default(1.0) // 1%
+  transactions Transaction[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  @@map("frais")
+}
+
+model Wallet {
+  id        Int       @id @default(autoincrement())
+  user_id   Int       @unique
+  plafond    Int
+  solde     Float     @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [user_id], references: [id])
+  @@map("wallets")
+
+
+
+}
+
+model Notification {
+  id             Int       @id @default(autoincrement())
+  notifier_id    Int
+  notified_id    Int
+  titre          String
+  message        String
+  createdAt      DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  transaction_id Int  @unique
+  transaction    Transaction @relation(fields: [transaction_id], references: [id])
+  notifier       User @relation("Notifier", fields: [notifier_id], references: [id])
+  notified       User @relation("Notified", fields: [notified_id], references: [id])
+  @@map("notifications")
+}
+
+model Fournisseur {
+  id       Int      @id @default(autoincrement())
+  libelle  String
+  logo     String
+  user_id  Int      @unique
+  user     User     @relation(fields: [user_id], references: [id])
+  contrats ContratFournisseur[]
+  subscribe  SubscribeFournisseur[]
+  
+  type_fournisseur   TypeFournisseur
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  @@map("fournisseurs")
+}
+
+model Contrat {
+  id          Int      @id @default(autoincrement())
+  libelle     String
+  description String
+  pourcentage Float
+  type        TypeContrat
+  contratsFournisseur ContratFournisseur[]
+  contratsBanque      ContratBanque[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  @@map("contrats")
+}
+
+model SubscribeFournisseur {
+  id                 Int       @id @default(autoincrement())
+  reference          String
+  fournisseur_id     Int     @unique
+  fourniseur     Fournisseur     @relation(fields: [fournisseur_id], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  @@map("subscribe_fournisseurs")
+}
+
+model ContratFournisseur {
+  id               Int       @id @default(autoincrement())
+  user_id          Int
+  fournisseur_id   Int
+  date_debut       DateTime
+  date_fin         DateTime
+  id_type_contrat  Int
+  user             User        @relation(fields: [user_id], references: [id])
+  fournisseur      Fournisseur  @relation(fields: [fournisseur_id], references: [id])
+  contrat      Contrat  @relation(fields: [id_type_contrat], references: [id])
+  @@map("contrats_fournisseur")
+}
+
+model ContratBanque {
+  id               Int       @id @default(autoincrement())
+  user_id          Int
+  banque_id        Int
+  date_debut       DateTime
+  date_fin         DateTime
+  id_type_contrat  Int
+  user             User        @relation(fields: [user_id], references: [id])
+  banque           Banque      @relation(fields: [banque_id], references: [id])
+  contrat      Contrat @relation(fields: [id_type_contrat], references: [id])
+  @@map("contrats_banques")
+}
+
+model Paiement {
+  id               Int        @id @default(autoincrement())
+  transaction_id   Int        @unique
+  transaction      Transaction @relation(fields: [transaction_id], references: [id])
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@map("paiements")
+
+}
+
+model Banque {
+  id       Int      @id @default(autoincrement())
+  libelle  String
+  logo     String
+  userBanques UserBanque[]
+  contratsBanque ContratBanque[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  @@map("banques")
+}
+
+model UserBanque {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  banque_id  Int
+  code       String
+  etat       EtatUserBanque
+  user       User     @relation(fields: [user_id], references: [id])
+  banque     Banque   @relation(fields: [banque_id], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  @@map("user_banques")
+}
+
+enum Role { 
+  admin
+  client
+  agence
+  fournisseur
+
+}
+
+enum TypeTransaction {
+  depot
+  retrait
+  transfert
+  paiement
+  recharge_credit
+}
+
+enum StatutTransaction {
+  effectuer
+  annuler
+}
+
+enum EtatUserBanque {
+  active
+  inactive
+}
+
+enum TypeContrat {
+  banque
+  fournisseur
+}
+enum TypeFournisseur {
+  facture
+  restaurant
+}
+

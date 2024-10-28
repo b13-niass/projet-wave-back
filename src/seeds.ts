@@ -1,6 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
+
+// dist/seeds.js
+import 'dotenv/config';
+
+// Votre code actuel suit ici
+
+
 async function main() {
   // Seed Pays
   const pays1 = await prisma.pays.create({
@@ -20,24 +27,24 @@ async function main() {
   const waveUser = await prisma.user.create({
     data: {
       nom: 'Wave',
-      prenom: 'Mobile Money',
-      password: 'secureWavePassword!789', // Ensure this password is hashed in production
-      adresse: '456 Ocean Drive',
-      telephone: '+221771234567',
-      file_cni: 'wave_cni.pdf',
-      cni: '9876543210',
-      date_naissance: new Date('1985-06-20'),
-      code_verification: 'GHI789',
-      role: 'admin', // Adjust if different role is required
-      statut_compte: 'active',
-      pays: { connect: { id: pays1.id } }, // Assuming you have a pays object to connect to
+        prenom: 'Mobile Money',
+        password: 'secureWavePassword!789',
+        adresse: '456 Ocean Drive',
+        telephone: '+22173432346',
+        file_cni: 'wave_cni.pdf',
+        cni: '9876233210',
+        date_naissance: new Date('1985-06-20'),
+        code_verification: 'GHIUYT', // Assurez-vous que ce code est unique
+        role: 'admin',
+        statut_compte: 'active',
+        pays: { connect: { id: pays1.id } },
     },
   });
 
   // Seed User
   const user1 = await prisma.user.create({
     data: {
-      nom: 'Doe',
+      nom: 'Does',
       prenom: 'John',
       password: 'password123',
       adresse: '123 Avenue',
@@ -45,7 +52,7 @@ async function main() {
       file_cni: 'cni_doe.pdf',
       cni: '1234567890',
       date_naissance: new Date('1990-01-01'),
-      code_verification: 'ABC123',
+      code_verification: 'ABC123', // Unique
       role: 'client',
       statut_compte: 'active',
       pays_id: pays1.id,
@@ -55,17 +62,17 @@ async function main() {
   const user2 = await prisma.user.create({
     data: {
       nom: 'Smith',
-      prenom: 'Jane',
-      password: 'password456',
-      adresse: '456 Rue',
-      telephone: '+221771234567',
-      file_cni: 'cni_smith.pdf',
-      cni: '9876543210',
-      date_naissance: new Date('1985-05-15'),
-      code_verification: 'XYZ789',
-      role: 'agence',
-      statut_compte: 'active',
-      pays_id: pays2.id,
+        prenom: 'Jane',
+        password: 'password456',
+        adresse: '456 Rue',
+        telephone: '+33771234569',
+        file_cni: 'cni_smith.pdf',
+        cni: '9876543213',
+        date_naissance: new Date('1985-05-15'),
+        code_verification: 'XYZ789', // Unique
+        role: 'agence',
+        statut_compte: 'active',
+        pays_id: pays2.id,
     },
   });
 
@@ -73,16 +80,16 @@ async function main() {
     data: {
       nom: 'Woyofal',
       prenom: 'Electricity',
-      password: 'securePassword!123', // Make sure the password is securely hashed if using in production
+      password: 'securePassword!123',
       adresse: '15 Rue du Soleil, Dakar',
-      telephone: '+221771234567',
+      telephone: '+22178980443',
       file_cni: 'woyofal_cni.pdf',
       cni: '9876543210',
       date_naissance: new Date('1975-05-20'),
-      code_verification: 'XYZ789',
+      code_verification: 'LMN456', // Unique
       role: 'fournisseur',
       statut_compte: 'active',
-      pays: { connect: { id: pays2.id } }, // Connect to existing country ID (Senegal)
+      pays: { connect: { id: pays2.id } },
     },
   });
   
@@ -138,7 +145,7 @@ async function main() {
   const transaction2 = await prisma.transaction.create({
     data: {
       sender_id: user1.id,
-      receiver_id: user1.id,
+      receiver_id: user2.id,
       montant_envoye: 50.0,
       montant_recus: 50.0,
       type_transaction: 'recharge_credit',

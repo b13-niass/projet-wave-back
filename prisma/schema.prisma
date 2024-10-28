@@ -13,7 +13,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 // Schema Prisma pour le projet
 
 model User {
@@ -22,11 +21,11 @@ model User {
   prenom           String
   password         String
   adresse          String
-  telephone        String
+  telephone        String  @unique
   file_cni         String
   cni              String
   date_naissance   DateTime
-  code_verification String
+  code_verification String @unique
 
   role             Role
   statut_compte    String
@@ -69,7 +68,7 @@ model Agence {
 }
 model Transaction {
   id               Int       @id @default(autoincrement())
-  sender_id        Int
+  sender_id        Int?
   montant_envoye          Float
   montant_recus          Float
   type_transaction TypeTransaction
@@ -78,7 +77,7 @@ model Transaction {
   receiver_id      Int
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
-  sender           User      @relation("SentTransactions", fields: [sender_id], references: [id])
+  sender           User?      @relation("SentTransactions", fields: [sender_id], references: [id])
   receiver         User      @relation("ReceivedTransactions", fields: [receiver_id], references: [id])
   frais            Frais?    @relation(fields: [frais_id], references: [id])
   paiement         Paiement?

@@ -5,9 +5,19 @@ export interface IMiddlewareUser {
   role?: string;
 }
 export interface AuthenticatedRequest extends Request {
-  id?: number;
+
+  user?: IMiddlewareUser;
+  id?: string;
 }
 
+// export interface ControllerRequest extends Request {
+//   id?: string;
+// }
+
+
 export interface ControllerRequest extends Request {
-  id?: number;
+
+  user?: {
+    id: number; // Type adapté à l'ID utilisateur
+  };
 }

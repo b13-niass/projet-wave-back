@@ -40,11 +40,11 @@ const corsOptions = {
 
 // Recréer __dirname
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const _dirname = path.dirname(__filename);
 
 const BASE_API = process.env.PREFIX_URI;
 // Load your YAML file
-const swaggerDocument = yamljs.load(path.join(__dirname, "..", "swagger.yaml"));
+const swaggerDocument = yamljs.load(path.join(_dirname, "..", "swagger.yaml"));
 
 const PORT = process.env.PORT || 5000; 
 
@@ -70,7 +70,6 @@ export const  io = new Server(server, {
 });
 
 
-
 app.use(`${BASE_API}`, authRoutes);
 app.use(`${BASE_API}/client`, clientRoutes);
 app.use(`${BASE_API}/admin`, AdminRoutes);
@@ -79,4 +78,3 @@ app.use(`${BASE_API}/admin`, AdminRoutes);
 server.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
 });
-

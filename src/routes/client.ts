@@ -13,8 +13,13 @@ router.route("/banque").get(clientController.getAllBanques);
 router.route("/banque/:id_banque").get(clientController.getBanqueById);
 router.get("/fournisseurs", clientController.getFournisseurs);
 
+router.route("/transfert").get(clientController.transfert);
+router.route("/contact").post(clientController.addContact);
+router.route("/transfert").post(clientController.transfer);
+
 router.post("/paiement", clientController.addPaiement);
 
 router.get("/accueil", clientController.getAccueil);
 
 export { router };
+

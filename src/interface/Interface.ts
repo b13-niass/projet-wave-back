@@ -1,10 +1,11 @@
 import { Request } from "express";
 
 export interface IMiddlewareUser {
-  id?: string;
+  id?: number;
   role?: string;
 }
 export interface AuthenticatedRequest extends Request {
+
   user?: IMiddlewareUser;
   id?: string;
 }
@@ -15,6 +16,7 @@ export interface AuthenticatedRequest extends Request {
 
 
 export interface ControllerRequest extends Request {
+
   user?: {
     id: number; // Type adapté à l'ID utilisateur
   };

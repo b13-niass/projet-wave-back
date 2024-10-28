@@ -1,11 +1,11 @@
 import express from "express";
 import clientController from "../controller/ClientController.js";
-import { isAuthenticatedGlobal } from "../middleware/auth.js";
-//
+import { isClientAuthenticated } from "../middleware/authClient.js";
+
 const router = express.Router();
-//
 
-router.use(isAuthenticatedGlobal); // Utilisez le middleware pour toutes les routes
+router.use(isClientAuthenticated); // Utilisation du middleware pour toutes les routes protégées
 
+router.get("/accueil", clientController.getAccueil);
 
 export { router };

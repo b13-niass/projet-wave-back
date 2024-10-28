@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import {AuthenticatedRequest, IMiddlewareUser} from "../interface/Interface";
 import {NextFunction, Response} from "express";
 
-export const isAdminAuthenticated = (req: AuthenticatedRequest, res: Response, next: NextFunction)  => {
+/* export const isAdminAuthenticated = (req: AuthenticatedRequest, res: Response, next: NextFunction)  => {
     const authHeader = req.headers.authorization
     const token = authHeader && authHeader.split(' ')[1];
     if (token == null) {
@@ -21,7 +21,7 @@ export const isAdminAuthenticated = (req: AuthenticatedRequest, res: Response, n
         }else {
             res.status(403).json({message: 'No Authorization', status: 'KO'});
         }
-    })
+    }) */
     
     
-}
+/* } */

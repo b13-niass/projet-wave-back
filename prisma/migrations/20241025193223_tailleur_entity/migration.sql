@@ -221,6 +221,12 @@ CREATE TABLE "user_banques" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "users_telephone_key" ON "users"("telephone");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_code_verification_key" ON "users"("code_verification");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Agence_user_id_key" ON "Agence"("user_id");
 
 -- CreateIndex

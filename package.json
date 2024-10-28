@@ -8,7 +8,7 @@
     "start": "concurrently \"tsc --watch\" \"nodemon dist/app.js\"",
     "db:migrate": "npx prisma migrate dev --name tailleur-entity && npx prisma generate",
     "db:push": "npx prisma db push",
-    "db:init":"npx prisma init",
+    "db:init": "npx prisma init",
     "build": "tsc",
     "seed": "node dist/seeds.js"
   },

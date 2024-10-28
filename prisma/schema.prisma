@@ -20,11 +20,11 @@ model User {
   prenom           String
   password         String
   adresse          String
-  telephone        String
+  telephone        String  @unique
   file_cni         String
   cni              String
   date_naissance   DateTime
-  code_verification String
+  code_verification String @unique
 
   role             Role
   statut_compte    String

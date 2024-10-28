@@ -1,8 +1,6 @@
 
-
-
 import { PrismaClient } from "@prisma/client";
-import { ControllerRequest } from "../interface/Interface.js";
+import { ControllerRequest, AuthenticatedRequest } from "../interface/Interface.js";
 import { Response } from "express";
 import { TypeTransaction } from "../enums/TypeTransaction.js";
 import { StatutTransaction } from "../enums/StatutTransaction.js"; // Chemin à ajuster
@@ -14,7 +12,7 @@ const prisma = new PrismaClient();
 
 class ClientController {
   constructor() {
-    for (const key of Object.getOwnPropertyNames(Object.getPrototypeOf(this))) {
+    for (const key of Object.getOwnPropertyNames(Object.getPrototypeOf(this)) as (keyof this)[]) {
       const val = (this as any)[key];
       if (key !== "constructor" && typeof val === "function") {
         (this as any)[key] = val.bind(this);
@@ -37,67 +35,7 @@ class ClientController {
       res.status(500).json({ message: "An error occurred while fetching fournisseurs." });
     }
   }
-
-// avec authentification
-
-  // async addPaiement(req: ControllerRequest, res: Response) {
-  //   const { fournisseurId, typeFournisseur, referentiel, montant } = req.body;
-
-  //   if (!fournisseurId || !montant || !typeFournisseur) {
-  //     return res.status(400).json({ message: "Invalid request body" });
-  //   }
-
-  //   try {
-  //     // Check the fee rule
-  //     const frais = await prisma.frais.findFirst();
-  //     if (!frais) {
-  //       return res.status(500).json({ message: "Fee structure not found" });
-  //     }
-
-  //     // Calculate the received amount based on the fee structure
-  //     let montantRecus = montant;
-  //     if (montant > 10) {
-  //       montantRecus = montant - Math.floor((montant - 10) / 5) * 5;
-  //     }
-
-  //     // If `TypeFournisseur` is `facture`, add to SubscribeFournisseur
-  //     if (typeFournisseur === "facture") {
-  //       if (!referentiel) {
-  //         return res.status(400).json({ message: "Referentiel is required for TypeFournisseur 'facture'" });
-  //       }
-
-  //       await prisma.subscribeFournisseur.create({
-  //         data: {
-  //           reference: referentiel,
-  //           fournisseur_id: fournisseurId,
-  //         },
-  //       });
-  //     }
-
-  //     // Create the transaction record
-  //     await prisma.transaction.create({
-  //       data: {
-  //         sender_id: req.user!.id, // assuming req.user.id is the authenticated user ID
-  //         montant_envoye: montant,
-  //         montant_recus: montantRecus,
-  //         type_transaction: TypeTransaction.paiement,
-  //         statut: StatutTransaction.effectuer, // Set as completed if no issues
-  //         receiver_id: fournisseurId,
-  //         frais_id: frais.id,
-  //       },
-  //     });
-
-  //     res.status(201).json({ message: "Payment processed successfully", montantRecus });
-  //   } catch (error) {
-  //     console.error("Error processing payment:", error);
-  //     res.status(500).json({ message: "An error occurred while processing the payment" });
-  //   }
-  // }
-
-
-
   
-
   async addPaiement(req: ControllerRequest, res: Response) {
     const { fournisseurId, typeFournisseur, referentiel, montant } = req.body;
   
@@ -165,7 +103,61 @@ class ClientController {
     }
   }
   
+
+  // Méthode pour afficher la page d'accueil
+  async getAccueil(req: AuthenticatedRequest, res: Response) {
+    try {
+      // Utiliser l'ID de l'utilisateur depuis le middleware d'authentification
+      if (!req.id) {
+        return res.status(400).json({ message: "ID utilisateur manquant", status: "ERROR" });
+      }
+
   
+      const userId = parseInt(req.id, 10);
+      console.log("bbbbbbbbbbb", userId);
+      // Vérification si userId est valide
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID utilisateur invalide", status: "ERROR" });
+      }
+
+      // Récupération des informations de l'utilisateur
+      const user = await prisma.user.findUnique({
+        where: {
+          id: userId, // Utilisation de userId pour la recherche
+        },
+        include: {
+          wallet: true,
+          transactionsSent: true,
+          transactionsReceived: true,
+          userBanques: true,
+        },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          message: "Utilisateur non trouvé",
+          status: "ERROR",
+        });
+      }
+
+      res.json({
+        data: {
+          user,
+          transactions: [...user.transactionsSent, ...user.transactionsReceived],
+          wallet: user.wallet,
+          user_banque: user.userBanques,
+        },
+        message: "page d'accueil chargée",
+        status: "OK",
+      });
+    } catch (error) {
+      console.error("Erreur lors du chargement de la page d'accueil :", error);
+      res.status(500).json({
+        message: "Erreur serveur",
+        status: "ERROR",
+      });
+    }
+  }
 }
 
 export default new ClientController();

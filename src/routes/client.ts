@@ -1,17 +1,16 @@
 import express from "express";
 import clientController from "../controller/ClientController.js";
-// import { isAuthenticatedGlobal } from "../middleware/auth.js";
-//
+import { isClientAuthenticated } from "../middleware/authClient.js";
+
 const router = express.Router();
-//
 
-// router.use(isAuthenticatedGlobal); 
+ router.use(isClientAuthenticated); 
 
-// Route to get all fournisseurs
 router.get("/fournisseurs", clientController.getFournisseurs);
 
-// Route to handle payment addition
 router.post("/paiement", clientController.addPaiement);
 
+
+router.get("/accueil", clientController.getAccueil);
 
 export { router };

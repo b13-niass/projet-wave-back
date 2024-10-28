@@ -5,6 +5,7 @@ export interface IMiddlewareUser {
   role?: string;
 }
 export interface AuthenticatedRequest extends Request {
+  user?: IMiddlewareUser;
   id?: string;
 }
 

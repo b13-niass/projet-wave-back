@@ -1,13 +1,13 @@
 import { Request } from "express";
 
 export interface IMiddlewareUser {
-  id?: string;
+  id?: number;
   role?: string;
 }
 export interface AuthenticatedRequest extends Request {
-  id?: string;
+  id?: number;
 }
 
 export interface ControllerRequest extends Request {
-  id?: string;
+  id?: number;
 }

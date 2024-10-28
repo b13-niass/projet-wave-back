@@ -4,7 +4,12 @@ import { isClientAuthenticated } from "../middleware/authClient.js";
 
 const router = express.Router();
 
-router.use(isClientAuthenticated); // Utilisation du middleware pour toutes les routes protégées
+ router.use(isClientAuthenticated); 
+
+router.get("/fournisseurs", clientController.getFournisseurs);
+
+router.post("/paiement", clientController.addPaiement);
+
 
 router.get("/accueil", clientController.getAccueil);
 

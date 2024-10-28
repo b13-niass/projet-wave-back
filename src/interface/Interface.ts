@@ -8,6 +8,13 @@ export interface AuthenticatedRequest extends Request {
   id?: string;
 }
 
+// export interface ControllerRequest extends Request {
+//   id?: string;
+// }
+
+
 export interface ControllerRequest extends Request {
-  id?: string;
+  user?: {
+    id: number; // Type adapté à l'ID utilisateur
+  };
 }

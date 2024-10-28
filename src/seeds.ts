@@ -1,6 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
+
+// dist/seeds.js
+import 'dotenv/config';
+
+// Votre code actuel suit ici
+
+
 async function main() {
   // Seed Pays
   const pays1 = await prisma.pays.create({

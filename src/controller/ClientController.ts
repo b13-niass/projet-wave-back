@@ -1,13 +1,18 @@
-
-import { PrismaClient, TypeTransaction, StatutTransaction, User } from "@prisma/client";
-import { Request, Response } from "express";
+import {
+  PrismaClient,
+  TypeTransaction,
+  StatutTransaction,
+  User,
+} from "@prisma/client";
+import { Response } from "express";
 import { io } from "../app.js";
-import { log } from "console";
 import { hashPassword } from "../utils/password.js";
-import { ControllerRequest, AuthenticatedRequest } from "../interface/Interface.js";
-import { TypeTransaction } from "../enums/TypeTransaction.js";
-import { StatutTransaction } from "../enums/StatutTransaction.js"; // Chemin à ajuster
-
+import {
+  ControllerRequest,
+  AuthenticatedRequest,
+} from "../interface/Interface.js";
+// import { TypeTransaction } from "../enums/TypeTransaction.js";
+// import { StatutTransaction } from "../enums/StatutTransaction.js"; // Chemin à ajuster
 
 const prisma = new PrismaClient();
 
@@ -22,42 +27,40 @@ class ClientController {
     }
   }
 
+  // async transfert(req: ControllerRequest, res: Response): Promise<Response> {
+  //   const userId = parseInt(req.id!); // Assurez-vous que req.id est défini
+  //   console.log(req.id);
 
-  async transfert(req: ControllerRequest, res: Response): Promise<Response> {
+  //   try {
+  //     const contacts = await prisma.contact.findMany({
+  //       where: { user_id: userId },
+  //     });
 
-    const userId = req.id!; // Assurez-vous que req.id est défini
-    console.log(req.id);
+  //     if (contacts.length === 0) {
+  //       return res.status(404).json({
+  //         message: "Aucun contact trouvé.",
+  //         status: "KO",
+  //       });
+  //     }
 
-    try {
-      const contacts = await prisma.contact.findMany({
-        where: { user_id: userId },
-      });
-
-      if (contacts.length === 0) {
-        return res.status(404).json({
-          message: "Aucun contact trouvé.",
-          status: "KO",
-        });
-      }
-
-      // Renvoyer une réponse avec des contacts
-      return res.status(200).json({
-        data: contacts,
-        message: "Liste de contacts chargée.",
-        status: "OK",
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(500).json({ message: error.message, status: "KO" });
-      }
-      return res.status(500).json({ message: "Erreur inconnue", status: "KO" });
-    }
-  }
+  //     // Renvoyer une réponse avec des contacts
+  //     return res.status(200).json({
+  //       data: contacts,
+  //       message: "Liste de contacts chargée.",
+  //       status: "OK",
+  //     });
+  //   } catch (error) {
+  //     if (error instanceof Error) {
+  //       return res.status(500).json({ message: error.message, status: "KO" });
+  //     }
+  //     return res.status(500).json({ message: "Erreur inconnue", status: "KO" });
+  //   }
+  // }
 
   async addContact(req: ControllerRequest, res: Response) {
     try {
       const { nom, telephone } = req.body;
-      const user_id = req.id!; // Supposons que l'ID de l'utilisateur est stocké dans `req.user`
+      const user_id = parseInt(req.id!); // Supposons que l'ID de l'utilisateur est stocké dans req.user
 
       // Validation des champs
       if (!nom || !telephone) {
@@ -79,7 +82,15 @@ class ClientController {
       res.status(201).json({
         message: "Contact ajouté avec succès",
         contact,
-
+        status: "OK",
+      });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ message: "Erreur lors de l'ajout du contact", error });
+    }
+  }
 
   async getAllAgence(req: ControllerRequest, res: Response) {
     const idUser = parseInt(req.id as string, 10);
@@ -171,20 +182,33 @@ class ClientController {
     } catch (error) {
       console.error(error);
 
-      res.status(500).json({ message: "Erreur lors de l'ajout du contact", error });
+      res
+        .status(500)
+        .json({ message: "Erreur lors de l'ajout du contact", error });
     }
   }
 
-
-  async transfer(req: ControllerRequest, res: Response) {
+  async transfert(req: ControllerRequest, res: Response) {
     try {
-      const { montant_envoye, montant_recus, contact_id } = req.body; // Récupération des montants et de l'identifiant du contact
-      const userId = req.id!; // Récupérer l'ID de l'utilisateur connecté
+      const { montant_recus, telephone } = req.body;
+      const userId = parseInt(req.id!);
 
       // Validation des champs
-      if (!montant_envoye && !montant_recus) {
+      if (!montant_recus && !telephone) {
         return res.status(400).json({
-          message: "Vous devez fournir soit le montant à envoyer soit le montant à recevoir.",
+          message:
+            "Vous devez fournir soit le montant à envoyer soit le montant à recevoir.",
+          status: "KO",
+        });
+      }
+
+      const userReceiver = await prisma.user.findUnique({
+        where: { telephone },
+      });
+
+      if (!userReceiver) {
+        return res.status(404).json({
+          message: "Utilisateur non trouvé.",
           status: "KO",
         });
       }
@@ -194,9 +218,9 @@ class ClientController {
         where: { user_id: userId },
       });
 
-      // Déterminer le montant à envoyer et à recevoir
-      let montantEnvoye = montant_envoye || ((montant_recus / (1 - 0.01))); // 1% de frais
-      let montantRecus = montant_recus || (montantEnvoye * (1 - 0.01)); // 1% de frais
+      const frais = await prisma.frais.findFirst();
+
+      const montantEnvoye = montant_recus + montant_recus * frais!.valeur;
 
       if (!wallet || wallet.solde < montantEnvoye) {
         return res.status(400).json({
@@ -205,27 +229,15 @@ class ClientController {
         });
       }
 
-      // Rechercher le contact par ID
-      const contact = await prisma.contact.findUnique({
-        where: { id: contact_id },
-      });
-
-      if (!contact) {
-        return res.status(404).json({
-          message: "Contact non trouvé.",
-          status: "KO",
-        });
-      }
-
       // Créer la transaction
       const transaction = await prisma.transaction.create({
         data: {
           sender_id: userId,
-          receiver_id: contact.user_id,
+          receiver_id: userReceiver.id,
           montant_envoye: montantEnvoye,
-          montant_recus: montantRecus,
-          type_transaction: TypeTransaction.transfert, // Utilisation de l'énumération pour le type
-          statut: StatutTransaction.effectuer, // Statut initial de la transaction
+          montant_recus: montant_recus,
+          type_transaction: TypeTransaction.transfert,
+          statut: StatutTransaction.effectuer,
         },
       });
 
@@ -235,13 +247,21 @@ class ClientController {
         data: { solde: wallet.solde - montantEnvoye },
       });
 
-      // Émettre une notification de transfert au destinataire via Socket.IO
-      io.to(`user_${contact.user_id}`).emit("notificationTransfert", {
-        senderId: userId,
-        receiverId: contact.user_id,
-        montant: montantRecus,
-        message: "Vous avez reçu un transfert.",
+      // Mise à jour du portefeuille
+      await prisma.wallet.update({
+        where: { user_id: userReceiver.id },
+        data: {
+          solde: { increment: montant_recus },
+        },
       });
+
+      // // Émettre une notification de transfert au destinataire via Socket.IO
+      // io.to(`user_${contact.user_id}`).emit("notificationTransfert", {
+      //   senderId: userId,
+      //   receiverId: contact.user_id,
+      //   montant: montantRecus,
+      //   message: "Vous avez reçu un transfert.",
+      // });
 
       res.status(201).json({
         data: transaction,
@@ -254,11 +274,6 @@ class ClientController {
     }
   }
 
-
-      res
-        .status(500)
-        .json({ data: [], message: "Internal Server Error", status: "KO" });
-  // Définition de la méthode getAllBanques
   async getAllBanques(req: ControllerRequest, res: Response): Promise<void> {
     try {
       const banques = await prisma.banque.findMany({
@@ -283,16 +298,18 @@ class ClientController {
     }
   }
 
-
   // Méthode pour obtenir une banque et ses utilisateurs associés
   async getBanqueById(req: ControllerRequest, res: Response): Promise<void> {
+    const idUser = parseInt(req.id!); // Récupérer l'ID de l'utilisateur connecté
     const { id_banque } = req.params; // Récupérer l'id de la banque depuis les paramètres de la requête
 
     try {
       const banque = await prisma.banque.findUnique({
         where: { id: Number(id_banque) }, // S'assurer que l'id est un nombre
         include: {
-          userBanques: true, // Inclure les utilisateurs associés
+          userBanques: {
+            where: { user_id: idUser },
+          },
         },
       });
 
@@ -318,141 +335,154 @@ class ClientController {
     }
   }
 
- // Méthode pour créer une nouvelle banque
- async createBanque(req:ControllerRequest, res: Response): Promise<void> {
-  const { libelle, logo } = req.body; // Récupérer les données depuis le corps de la requête
+  // Méthode pour créer une nouvelle banque
+  async createBanque(req: ControllerRequest, res: Response): Promise<void> {
+    const { libelle, logo } = req.body; // Récupérer les données depuis le corps de la requête
 
-  // Validation des données
-  if (!libelle || !logo) {
-    res.status(400).json({
-      success: false,
-      message: "Le libelle et le logo sont requis.",
-    });
-    return;
+    // Validation des données
+    if (!libelle || !logo) {
+      res.status(400).json({
+        success: false,
+        message: "Le libelle et le logo sont requis.",
+      });
+      return;
+    }
+
+    try {
+      // Création de la banque
+      const newBanque = await prisma.banque.create({
+        data: {
+          libelle,
+          logo,
+          // Vous pouvez ajouter d'autres champs si nécessaire
+        },
+      });
+
+      res.status(201).json({
+        success: true,
+        data: newBanque,
+        message: "Banque créée avec succès.",
+      });
+    } catch (error) {
+      console.error("Erreur lors de la création de la banque :", error);
+      res.status(500).json({
+        success: false,
+        message: "Erreur lors de la création de la banque.",
+      });
+    }
   }
-
-  try {
-    // Création de la banque
-    const newBanque = await prisma.banque.create({
-      data: {
-        libelle,
-        logo,
-        // Vous pouvez ajouter d'autres champs si nécessaire
-      },
-    });
-
-    res.status(201).json({
-      success: true,
-      data: newBanque,
-      message: "Banque créée avec succès.",
-    });
-  } catch (error) {
-    console.error("Erreur lors de la création de la banque :", error);
-    res.status(500).json({
-      success: false,
-      message: "Erreur lors de la création de la banque.",
-    });
-  }
-}
 
   // Method to get all fournisseurs
   async getFournisseurs(req: ControllerRequest, res: Response) {
     try {
-      const fournisseurs = await prisma.fournisseur.findMany({
-        select: {
-          logo: true,
-          libelle: true,
-        },
-      });
+      const fournisseurs = await prisma.fournisseur.findMany();
       res.status(200).json(fournisseurs);
     } catch (error) {
       console.error("Error fetching fournisseurs:", error);
-      res.status(500).json({ message: "An error occurred while fetching fournisseurs." });
+      res
+        .status(500)
+        .json({ message: "An error occurred while fetching fournisseurs." });
     }
   }
-  
+
   async addPaiement(req: ControllerRequest, res: Response) {
+    const userId = parseInt(req.id!);
     const { fournisseurId, typeFournisseur, referentiel, montant } = req.body;
-  
-    console.log("Request body:", req.body); // Vérifiez les données d'entrée
-  
+
     if (!fournisseurId || !montant || !typeFournisseur) {
       return res.status(400).json({ message: "Invalid request body" });
     }
-  
+
     try {
-      const frais = await prisma.frais.findFirst();
-      console.log("Frais structure:", frais); // Vérifiez la structure des frais
-  
-      if (!frais) {
-        return res.status(500).json({ message: "Fee structure not found" });
-      }
-  
-      // Calcul du montant reçu
-      let montantRecus = montant;
-      if (montant > 10) {
-        montantRecus = montant - Math.floor((montant - 10) / 5) * 5;
-      }
-  
-      // Si `TypeFournisseur` est `facture`, vérifiez et ajoutez à SubscribeFournisseur
-      if (typeFournisseur === "facture") {
-        if (!referentiel) {
-          return res.status(400).json({ message: "Referentiel is required for TypeFournisseur 'facture'" });
-        }
-  
-        // Vérifiez si un enregistrement existe déjà
-        const existingSubscribe = await prisma.subscribeFournisseur.findFirst({
-          where: { fournisseur_id: fournisseurId, reference: referentiel },
-        });
-  
-        // Si aucun enregistrement n'existe, créez un nouveau
-        if (!existingSubscribe) {
-          await prisma.subscribeFournisseur.create({
-            data: {
-              reference: referentiel,
-              fournisseur_id: fournisseurId,
-            },
-          });
-        } else {
-          console.log("Un abonnement existe déjà pour ce fournisseur avec ce référentiel.");
-        }
-      }
-  
-      // Créez l'enregistrement de transaction
-      await prisma.transaction.create({
-        data: {
-          sender_id: null, // Modifiez ici pour permettre des paiements sans connexion
-          montant_envoye: montant,
-          montant_recus: montantRecus,
-          type_transaction: "paiement", // Remplacez par l'énumération si nécessaire
-          statut: "effectuer", // Remplacez par l'énumération si nécessaire
-          receiver_id: fournisseurId,
-          frais_id: frais.id,
+      const fournisseur = await prisma.fournisseur.findUnique({
+        where: { id: parseInt(fournisseurId) },
+        include: {
+          user: true,
         },
       });
-  
-      res.status(201).json({ message: "Payment processed successfully", montantRecus });
-    } catch (error) {
-      console.error("Error processing payment:", error); // Affichez l'erreur pour le débogage
-      res.status(500).json({ message: "An error occurred while processing the payment" });
-    }
-  }
-  
 
-  // Méthode pour afficher la page d'accueil
-  async getAccueil(req: AuthenticatedRequest, res: Response) {
-    try {
-      // Utiliser l'ID de l'utilisateur depuis le middleware d'authentification
-      if (!req.id) {
-        return res.status(400).json({ message: "ID utilisateur manquant", status: "ERROR" });
+      if (typeFournisseur === "facture") {
+        if (!referentiel) {
+          return res.status(400).json({
+            message: "Referentiel is required for TypeFournisseur 'facture'",
+          });
+        }
+
+        const subF = await prisma.subscribeFournisseur.findFirst({
+          where: {
+            reference: referentiel,
+          },
+        });
+
+        if (!subF) {
+          res
+            .status(404)
+            .json({ message: "Ce referentiel n'existe pas", status: "KO" });
+        }
       }
 
-  
+      const wallet = await prisma.wallet.findUnique({
+        where: {
+          user_id: userId,
+        },
+      });
+
+      if (!wallet) {
+        return res
+          .status(404)
+          .json({ message: "Wallet not found", status: "KO" });
+      }
+
+      if (wallet.solde < montant) {
+        return res
+          .status(400)
+          .json({ message: "Insufficient funds", status: "KO" });
+      }
+      await prisma.transaction.create({
+        data: {
+          sender_id: userId,
+          montant_envoye: montant,
+          montant_recus: montant,
+          type_transaction: "paiement",
+          statut: "effectuer",
+          receiver_id: fournisseur?.user.id!,
+        },
+      });
+
+      const updatedWallet = await prisma.wallet.update({
+        where: {
+          user_id: userId,
+        },
+        data: {
+          solde: wallet.solde - montant,
+        },
+      });
+
+      res
+        .status(201)
+        .json({ message: "Payment processed successfully", montant });
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      res
+        .status(500)
+        .json({ message: "An error occurred while processing the payment" });
+    }
+  }
+
+  async getAccueil(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.id) {
+        return res
+          .status(400)
+          .json({ message: "ID utilisateur manquant", status: "ERROR" });
+      }
+
       const userId = parseInt(req.id, 10);
-      console.log("bbbbbbbbbbb", userId);
-      // Vérification si userId est valide
+
       if (isNaN(userId)) {
-        return res.status(400).json({ message: "ID utilisateur invalide", status: "ERROR" });
+        return res
+          .status(400)
+          .json({ message: "ID utilisateur invalide", status: "ERROR" });
       }
 
       // Récupération des informations de l'utilisateur
@@ -478,7 +508,6 @@ class ClientController {
       res.json({
         data: {
           user,
-          transactions: [...user.transactionsSent, ...user.transactionsReceived],
           wallet: user.wallet,
           user_banque: user.userBanques,
         },
@@ -494,7 +523,139 @@ class ClientController {
     }
   }
 
+  async creditTransaction(req: ControllerRequest, res: Response) {
+    try {
+      // Vérification de l'authentification
+      if (!req.id) {
+        return res.status(401).json({
+          status: "error",
+          message: "Utilisateur non authentifié",
+          data: null,
+        });
+      }
+
+      const { nom_contact, telephone_contact, montant } = req.body;
+      const user_id = parseInt(req.id); // Assurer que user_id est un entier
+
+      // Validation des champs requis
+      if (!nom_contact || !telephone_contact || !montant) {
+        return res.status(400).json({
+          status: "Ko",
+          message: "Tous les champs sont requis",
+          data: null,
+        });
+      }
+
+      // Vérification du solde du portefeuille
+      const wallet = await prisma.wallet.findUnique({
+        where: { user_id: user_id },
+      });
+
+      if (!wallet || wallet.solde < montant) {
+        return res.status(400).json({
+          status: "Ko",
+          message: "Solde insuffisant pour effectuer cette transaction",
+          data: null,
+        });
+      }
+
+      // Exécution de la transaction
+      const transaction = await prisma.$transaction(async (prisma) => {
+        // Création de la transaction
+        const newTransaction = await prisma.transaction.create({
+          data: {
+            sender_id: user_id,
+            receiver_id: user_id,
+            montant_envoye: montant,
+            montant_recus: montant,
+            type_transaction: "recharge_credit",
+            statut: "effectuer",
+          },
+        });
+
+        // Mise à jour du portefeuille
+        await prisma.wallet.update({
+          where: { user_id: user_id },
+          data: {
+            solde: { decrement: montant },
+          },
+        });
+
+        // Création ou mise à jour du contact
+        await prisma.contact.create({
+          data: {
+            nom: nom_contact,
+            telephone: telephone_contact,
+            user_id: user_id,
+          },
+        });
+
+        // Création de la notification
+        await prisma.notification.create({
+          data: {
+            notifier_id: user_id,
+            notified_id: user_id,
+            titre: "Achat de crédit",
+            message: `Achat de crédit de ${montant} FCFA pour le numéro ${telephone_contact}`,
+            transaction_id: newTransaction.id,
+          },
+        });
+
+        return newTransaction;
+      });
+
+      // Émission de l'événement WebSocket
+      io.emit("newTransaction", {
+        type: "recharge_credit",
+        data: transaction,
+      });
+
+      return res.status(201).json({
+        status: "success",
+        message: `Recharge de crédit de ${montant} FCFA effectuée avec succès`,
+        data: transaction,
+      });
+    } catch (error) {
+      console.error("Erreur lors de la transaction de crédit:", error);
+      return res.status(500).json({
+        status: "Ko",
+        message: "Erreur lors de la création de la transaction",
+        data: null,
+      });
+    }
+  }
+
+  async getContacts(req: ControllerRequest, res: Response) {
+    try {
+      // Vérification de l'authentification
+      if (!req.id) {
+        return res.status(401).json({
+          status: "error",
+          message: "Utilisateur non authentifié",
+          data: null,
+        });
+      }
+
+      const user_id = parseInt(req.id);
+
+      const contacts = await prisma.contact.findMany({
+        where: { user_id: user_id },
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: "Contacts récupérés avec succès",
+        data: contacts,
+      });
+    } catch (error) {
+      console.error("Erreur lors de la récupération des contacts:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Erreur lors de la récupération des contacts",
+        data: null,
+      });
+    }
+  }
 }
 
 export default new ClientController();
-

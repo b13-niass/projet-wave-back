@@ -5,11 +5,156 @@ info:
   description: API permettant de créer un compte utilisateur.
 
 paths:
+  /api/v1/login:
+    post:
+      summary: Connexion de l'utilisateur
+      tags:
+        - Authentification
+      requestBody:
+        description: Données de connexion de l'utilisateur.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                telephone:
+                  type: string
+                  description: Numéro de téléphone de l'utilisateur.
+                  example: "+221 77 123 4567"
+                password:
+                  type: string
+                  format: password
+                  description: Mot de passe de l'utilisateur.
+                  example: "monMotDePasse!"
+      responses:
+        "200":
+          description: Code de vérification envoyé avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: ID de l'utilisateur.
+                        example: "123"
+                      telephone:
+                        type: string
+                        description: Numéro de téléphone de l'utilisateur.
+                        example: "+221 77 123 4567"
+                      codeVerification:
+                        type: string
+                        description: Code de vérification envoyé.
+                        example: "123456"
+                  message:
+                    type: string
+                    example: "Un code de verification a ete envoye."
+        "401":
+          description: Identifiants incorrects.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: "Identifiants incorrects."
+        "500":
+          description: Erreur interne du serveur.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Erreur serveur."
+
+  /api/v1/verifytoken:
+    post:
+      summary: Vérification du code de vérification
+      tags:
+        - Authentification
+      requestBody:
+        description: Code de vérification pour l'authentification de l'utilisateur.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code_verification:
+                  type: string
+                  description: Code de vérification envoyé à l'utilisateur.
+                  example: "123456"
+      responses:
+        "200":
+          description: Vérification réussie.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        description: Jeton JWT pour l'authentification de l'utilisateur.
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  message:
+                    type: string
+                    example: "Vérification réussie."
+        "401":
+          description: Code de vérification incorrect.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: "Code de vérification incorrect."
+        "500":
+          description: Erreur interne du serveur.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Erreur serveur."
+
   /api/v1/client/agences:
     get:
       summary: Obtenir la liste des agents
       tags:
         - Clients
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: Liste des agents récupérée avec succès.
@@ -51,6 +196,8 @@ paths:
       summary: Obtenir les informations de plafond du portefeuille
       tags:
         - Clients
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: Informations de plafond récupérées avec succès.
@@ -84,11 +231,13 @@ paths:
 
   /api/v1/client/password:
     put:
-      summary: Mettre à jour le password du client
+      summary: Mettre à jour le mot de passe du client
       tags:
         - Clients
+      security:
+        - bearerAuth: []
       requestBody:
-        description: Password pour mise à jour.
+        description: Mot de passe pour mise à jour.
         required: true
         content:
           application/json:
@@ -97,11 +246,11 @@ paths:
               properties:
                 password:
                   type: string
-                  description: Nouveau code du client.
+                  description: Nouveau mot de passe du client.
                   example: "123456"
       responses:
         "200":
-          description: Code mis à jour avec succès.
+          description: Mot de passe mis à jour avec succès.
           content:
             application/json:
               schema:
@@ -112,10 +261,10 @@ paths:
                     properties:
                       token:
                         type: string
-                        description: Jeton d'authentification après mise à jour du code.
+                        description: Jeton d'authentification après mise à jour du mot de passe.
                   message:
                     type: string
-                    example: "Code mis à jour avec succès."
+                    example: "Mot de passe mis à jour avec succès."
                   status:
                     type: string
                     example: "Valider"
@@ -139,6 +288,676 @@ paths:
                   message:
                     type: string
                     example: "Une erreur interne s'est produite."
+
+  /api/v1/client/banque:
+    post:
+      summary: Créer une nouvelle banque
+      tags:
+        - Banque
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Données nécessaires pour créer une nouvelle banque.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                libelle:
+                  type: string
+                  description: Nom de la banque.
+                  example: "Banque de Paris"
+                logo:
+                  type: string
+                  description: URL du logo de la banque.
+                  example: "https://exemple.com/logo.png"
+      responses:
+        "201":
+          description: Banque créée avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      libelle:
+                        type: string
+                        example: "Banque de Paris"
+                      logo:
+                        type: string
+                        example: "https://exemple.com/logo.png"
+                  message:
+                    type: string
+                    example: "Banque créée avec succès."
+        "400":
+          description: Données invalides (libelle ou logo manquant).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Le libelle et le logo sont requis."
+        "500":
+          description: Erreur lors de la création de la banque.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Erreur lors de la création de la banque."
+
+    get:
+      summary: Obtenir la liste de toutes les banques
+      tags:
+        - Banque
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Liste des banques récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        libelle:
+                          type: string
+                          example: "Banque de Paris"
+                        logo:
+                          type: string
+                          example: "https://exemple.com/logo.png"
+                        createdAt:
+                          type: string
+                          format: date-time
+                          example: "2024-10-28T12:00:00Z"
+                        updatedAt:
+                          type: string
+                          format: date-time
+                          example: "2024-10-28T12:00:00Z"
+                  message:
+                    type: string
+                    example: "Liste des banques récupérée avec succès."
+        "500":
+          description: Erreur lors de la récupération des banques.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Erreur lors de la récupération des banques."
+
+  /api/v1/client/banque/{id_banque}:
+    get:
+      summary: Obtenir les détails d'une banque par ID
+      tags:
+        - Banque
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_banque
+          in: path
+          required: true
+          description: ID de la banque à récupérer.
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Banque récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      banque:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            example: 1
+                          libelle:
+                            type: string
+                            example: "Banque de Paris"
+                          logo:
+                            type: string
+                            example: "https://exemple.com/logo.png"
+                          createdAt:
+                            type: string
+                            format: date-time
+                            example: "2024-10-28T12:00:00Z"
+                          updatedAt:
+                            type: string
+                            format: date-time
+                            example: "2024-10-28T12:00:00Z"
+                      user_banque:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            userId:
+                              type: integer
+                              example: 2
+                            role:
+                              type: string
+                              example: "Administrateur"
+                  message:
+                    type: string
+                    example: "Banque récupérée avec succès."
+        "404":
+          description: Banque non trouvée.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Banque non trouvée."
+        "500":
+          description: Erreur lors de la récupération de la banque.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Erreur lors de la récupération de la banque."
+
+  /api/v1/client/fournisseurs:
+    get:
+      summary: Obtenir la liste de tous les fournisseurs
+      tags:
+        - Fournisseur
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Liste des fournisseurs récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    logo:
+                      type: string
+                      description: URL du logo du fournisseur.
+                      example: "https://exemple.com/logo.png"
+                    libelle:
+                      type: string
+                      description: Nom du fournisseur.
+                      example: "Fournisseur ABC"
+        "500":
+          description: Erreur lors de la récupération des fournisseurs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "An error occurred while fetching fournisseurs."
+
+  /api/v1/client/contact:
+    post:
+      summary: Ajouter un nouveau contact
+      tags:
+        - Contact
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Données pour ajouter un nouveau contact.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom:
+                  type: string
+                  description: Nom du contact.
+                  example: "Jean Dupont"
+                telephone:
+                  type: string
+                  description: Numéro de téléphone du contact.
+                  example: "+33 6 12 34 56 78"
+      responses:
+        "201":
+          description: Contact ajouté avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Contact ajouté avec succès"
+                  contact:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nom:
+                        type: string
+                        example: "Jean Dupont"
+                      telephone:
+                        type: string
+                        example: "+33 6 12 34 56 78"
+                      user_id:
+                        type: integer
+                        example: 1
+                  status:
+                    type: string
+                    example: "OK"
+        "400":
+          description: Le nom et le numéro de téléphone sont requis.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Le nom et le numéro de téléphone sont requis."
+                  status:
+                    type: string
+                    example: "KO"
+        "500":
+          description: Erreur lors de l'ajout du contact.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Erreur lors de l'ajout du contact."
+
+  /api/v1/client/transfert:
+    post:
+      summary: Transfert de fonds vers un contact
+      description: Permet à un utilisateur d'envoyer un transfert à un contact existant, avec vérification du solde et émission d'une notification.
+      tags:
+        - Transferts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                montant_recus:
+                  type: number
+                  description: Montant à envoyer (optionnel si `montant_recus` est fourni).
+                  example: 100
+                telephone:
+                  type: string
+                  nullable: true 
+                  description: le telephone le transfert est effectué.
+                  example: "+221773331122"
+              required:
+                - montant_recu
+
+      responses:
+        "201":
+          description: Transfert effectué avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      montant_envoye:
+                        type: number
+                        example: 100
+                      montant_recus:
+                        type: number
+                        example: 99
+                  message:
+                    type: string
+                    example: "Transfert effectué avec succès."
+        "400":
+          description: Erreur de validation des données ou solde insuffisant.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Solde insuffisant."
+        "404":
+          description: Contact non trouvé.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Contact non trouvé."
+        "500":
+          description: Erreur lors du transfert.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Erreur lors du transfert"
+
+  /api/v1/client/paiement:
+    post:
+      summary: Traitement d'un paiement
+      description: Permet à un utilisateur d'effectuer un paiement à un fournisseur.
+      tags:
+        - Paiement
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fournisseurId:
+                  type: integer
+                  description: ID du fournisseur à qui le paiement est effectué.
+                  example: 1
+                typeFournisseur:
+                  type: string
+                  description: Type de fournisseur (ex: "facture").
+                  example: "facture"
+                referentiel:
+                  type: string
+                  description: Référentiel pour le type de fournisseur.
+                  example: "REF-123"
+                montant:
+                  type: number
+                  description: Montant à payer.
+                  example: 150
+      responses:
+        "201":
+          description: Paiement traité avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Payment processed successfully"
+                  montantRecus:
+                    type: number
+                    example: 145
+        "400":
+          description: Données de requête invalides.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid request body"
+        "500":
+          description: Erreur lors du traitement du paiement.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "An error occurred while processing the payment"
+
+  /api/v1/client/accueil:
+    get:
+      summary: Récupération de la page d'accueil de l'utilisateur
+      description: Récupère les informations de l'utilisateur, y compris les transactions et le solde.
+      tags:
+        - Accueil
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Informations récupérées avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            example: 1
+                          name:
+                            type: string
+                            example: "John Doe"
+                          email:
+                            type: string
+                            example: "john.doe@example.com"
+                      transactions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            montant_envoye:
+                              type: number
+                              example: 100
+                            montant_recus:
+                              type: number
+                              example: 99
+                      wallet:
+                        type: object
+                        properties:
+                          solde:
+                            type: number
+                            example: 500
+                      user_banque:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            libelle:
+                              type: string
+                              example: "Banque de Paris"
+                  message:
+                    type: string
+                    example: "page d'accueil chargée"
+        "400":
+          description: ID utilisateur manquant ou invalide.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ID utilisateur manquant"
+        "404":
+          description: Utilisateur non trouvé.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Utilisateur non trouvé"
+        "500":
+          description: Erreur lors de la récupération des données.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Erreur serveur"
+
+  /api/v1/client/contacts:
+      get:
+        summary: "Obtenir la liste des contacts"
+        description: "Récupère tous les contacts associés à l'utilisateur connecté."
+        security:
+          - bearerAuth: []
+        responses:
+          '200':
+            description: "Liste des contacts récupérée avec succès."
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            example: 1
+                          name:
+                            type: string
+                            example: "John Doe"
+                          phone:
+                            type: string
+                            example: "+1234567890"
+                    message:
+                      type: string
+                      example: "Contacts récupérés avec succès."
+                    status:
+                      type: string
+                      example: "OK"
+          '401':
+            description: "Accès non autorisé. L'utilisateur n'est pas authentifié."
+          '500':
+            description: "Erreur lors de la récupération des contacts."
+
+  /api/v1/client/credit:
+    post:
+      summary: "Effectuer une transaction de crédit"
+      description: "Permet à l'utilisateur de créditer un montant sur son portefeuille."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom_contact:
+                  type: string
+                  format: string
+                  example: John Doe
+                telephone_contact:
+                  type: string
+                  format: string
+                  example: 770009911
+                montant:
+                  type: number
+                  format: float
+                  example: 100.0
+                description:
+                  type: string
+                  example: "Crédit mensuel"
+      responses:
+        '201':
+          description: "Transaction de crédit effectuée avec succès."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Transaction de crédit effectuée avec succès."
+                  montant:
+                    type: number
+                    format: float
+                    example: 100.0
+                  status:
+                    type: string
+                    example: "OK"
+        '400':
+          description: "Requête invalide. Vérifiez les données fournies."
+        '401':
+          description: "Accès non autorisé. L'utilisateur n'est pas authentifié."
+        '500':
+          description: "Erreur lors du traitement de la transaction."
+
 
 components:
   securitySchemes:

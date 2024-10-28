@@ -5,8 +5,7 @@ import adminController from "../controller/AdminController.js";
 
 /* router.use(isAdminAuthenticated);
  */
-/* router.route('/pourcentages').post(adminController.getPourcentage);
- */
+
 
 
 

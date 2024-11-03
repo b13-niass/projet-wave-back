@@ -7,7 +7,7 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 8140:8140
+EXPOSE 5000
 
 CMD ["sh", "-c", "npx prisma generate && npm start"]
 

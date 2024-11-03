@@ -17,7 +17,7 @@ router.get("/fournisseurs", clientController.getFournisseurs);
 // router.route("/transfert").get(clientController.transfert);
 // router.route("/contact").post(clientController.addContact);
 
-
+router.route("/frais").get(clientController.getFrais);
 router.route("/transfert").post(clientController.transfert);
 
 router.post("/paiement", clientController.addPaiement);
@@ -26,5 +26,7 @@ router.get("/accueil", clientController.getAccueil);
 
 router.route("/contacts").get(clientController.getContacts);
 router.route("/credit").post(clientController.creditTransaction);
+
+router.route("/compte/:telephone").get(clientController.getCompteByTelephone);
 
 export { router };

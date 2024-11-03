@@ -1,0 +1,33 @@
+# Node.js dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment variables
+#.env
+
+# Logs
+*.log
+logs
+*.out
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Tests
+coverage/
+*.spec.js
+*.test.js
+
+# Build output
+dist/
+build/
+.tmp/
+
+# Docker files
+Dockerfile*
+docker-compose.yml

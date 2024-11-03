@@ -13,7 +13,6 @@ class AuthController {
     this.login = this.login.bind(this); // Lier la méthode au contexte de la classe
   }
 
-  // Méthode de connexion
   async login(req: Request, res: Response) {
     const { telephone, password } = req.body;
 
@@ -21,21 +20,23 @@ class AuthController {
       const user = await prisma.user.findUnique({ where: { telephone } });
 
       if (!user) {
-        return res
-          .status(404)
-          .json({ status: 404, message: "l'utilisateur n'existe pas" });
+        return res.status(404).json({
+          data: null,
+          status: "KO",
+          message: "l'email ou le mot de passe est incorrect",
+        });
       }
 
       const isMatch = await verifyPassword(password, user.password);
       if (!isMatch) {
         return res.status(400).json({
+          data: null,
           message: "l'email ou le mot de passe est incorrect",
           status: "KO",
         });
       }
-      // Génère un code de vérification
-      const codeVerification = this.generateVerificationCode(); // Appelle la méthode pour générer le code
-      console.log("Code de vérification généré:", codeVerification);
+
+      const codeVerification = this.generateVerificationCode();
 
       await prisma.user.update({
         where: { telephone },
@@ -43,13 +44,17 @@ class AuthController {
       });
 
       return res.status(200).json({
-        status: 200,
+        status: "OK",
         data: { id: user.id, telephone: user.telephone, codeVerification },
         message: "Un code de verification a ete envoye",
       });
     } catch (error) {
       console.error("Erreur lors de la connexion:", error);
-      return res.status(500).json({ status: 500, message: "Erreur serveur" });
+      return res.status(500).json({
+        data: null,
+        status: "KO",
+        message: "Erreur lors de la connexion",
+      });
     }
   }
 
@@ -60,21 +65,19 @@ class AuthController {
   async verifyCode(req: Request, res: Response) {
     const { code_verification } = req.body;
 
-    console.log("Code de vérification reçu:", code_verification);
-
     try {
-      // Rechercher l'utilisateur en fonction du code de vérification
       const user = await prisma.user.findUnique({
-        where: { code_verification },
+        where: { code_verification }, // assuming `code` is a unique field in your User model
       });
 
       if (!user) {
-        return res
-          .status(401)
-          .json({ status: 401, message: "Code de vérification incorrect" });
+        return res.status(401).json({
+          data: null,
+          status: "KO",
+          message: "Code de vérification incorrect",
+        });
       }
 
-      // Génération du token JWT
       const token = jwt.sign(
         { id: user.id, telephone: user.telephone, role: user.role },
         JWT_SECRET,
@@ -82,16 +85,18 @@ class AuthController {
       );
 
       return res.status(200).json({
-        status: 200,
+        status: "OK",
         data: { token },
         message: "Vérification réussie",
       });
     } catch (error) {
-      console.error("Erreur lors de la vérification:", error);
-      return res.status(500).json({ status: 500, message: "Erreur serveur" });
+      return res.status(500).json({
+        data: null,
+        status: "KO",
+        message: "Erreur lors de la vérification",
+      });
     }
   }
-
 }
 
 export default new AuthController();

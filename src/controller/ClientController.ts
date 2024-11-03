@@ -11,8 +11,8 @@ import {
   ControllerRequest,
   AuthenticatedRequest,
 } from "../interface/Interface.js";
-// import { TypeTransaction } from "../enums/TypeTransaction.js";
-// import { StatutTransaction } from "../enums/StatutTransaction.js"; // Chemin à ajuster
+
+import QRCode from "qrcode";
 
 const prisma = new PrismaClient();
 
@@ -27,36 +27,6 @@ class ClientController {
     }
   }
 
-  // async transfert(req: ControllerRequest, res: Response): Promise<Response> {
-  //   const userId = parseInt(req.id!); // Assurez-vous que req.id est défini
-  //   console.log(req.id);
-
-  //   try {
-  //     const contacts = await prisma.contact.findMany({
-  //       where: { user_id: userId },
-  //     });
-
-  //     if (contacts.length === 0) {
-  //       return res.status(404).json({
-  //         message: "Aucun contact trouvé.",
-  //         status: "KO",
-  //       });
-  //     }
-
-  //     // Renvoyer une réponse avec des contacts
-  //     return res.status(200).json({
-  //       data: contacts,
-  //       message: "Liste de contacts chargée.",
-  //       status: "OK",
-  //     });
-  //   } catch (error) {
-  //     if (error instanceof Error) {
-  //       return res.status(500).json({ message: error.message, status: "KO" });
-  //     }
-  //     return res.status(500).json({ message: "Erreur inconnue", status: "KO" });
-  //   }
-  // }
-
   async addContact(req: ControllerRequest, res: Response) {
     try {
       const { nom, telephone } = req.body;
@@ -65,6 +35,7 @@ class ClientController {
       // Validation des champs
       if (!nom || !telephone) {
         return res.status(400).json({
+          data: null,
           message: "Le nom et le numéro de téléphone sont requis.",
           status: "KO",
         });
@@ -81,14 +52,16 @@ class ClientController {
 
       res.status(201).json({
         message: "Contact ajouté avec succès",
-        contact,
+        data: { contact },
         status: "OK",
       });
     } catch (error) {
       console.error(error);
-      res
-        .status(500)
-        .json({ message: "Erreur lors de l'ajout du contact", error });
+      res.status(500).json({
+        data: null,
+        status: "KO",
+        message: "Erreur lors de l'ajout du contact",
+      });
     }
   }
 
@@ -97,18 +70,18 @@ class ClientController {
     try {
       const user = await prisma.user.findUnique({ where: { id: idUser } });
       if (!user) {
-        return res
-          .status(404)
-          .json({ data: [], message: "Utilisateur non trouvé", status: "KO" });
+        return res.status(404).json({
+          data: null,
+          message: "Utilisateur non trouvé",
+          status: "KO",
+        });
       }
       const agences = await prisma.agence.findMany();
       res.json({
-        data: [
-          {
-            user,
-            agences,
-          },
-        ],
+        data: {
+          user,
+          agences,
+        },
         message: "Liste des agences récupérées avec succès",
         status: "OK",
       });
@@ -116,7 +89,7 @@ class ClientController {
       console.error(error);
       res
         .status(500)
-        .json({ data: [], message: "Internal Server Error", status: "KO" });
+        .json({ data: null, message: "Internal Server Error", status: "KO" });
     }
   }
 
@@ -125,20 +98,20 @@ class ClientController {
     try {
       const user = await prisma.user.findUnique({ where: { id: idUser } });
       if (!user) {
-        return res
-          .status(404)
-          .json({ data: [], message: "Utilisateur non trouvé", status: "KO" });
+        return res.status(404).json({
+          data: null,
+          message: "Utilisateur non trouvé",
+          status: "KO",
+        });
       }
       const wallet = await prisma.wallet.findFirst({
         where: { user_id: idUser },
       });
       res.json({
-        data: [
-          {
-            user,
-            wallet,
-          },
-        ],
+        data: {
+          user,
+          wallet,
+        },
         message: "Plafond récupéré avec succès",
         status: "OK",
       });
@@ -146,7 +119,7 @@ class ClientController {
       console.error(error);
       res
         .status(500)
-        .json({ data: [], message: "Internal Server Error", status: "KO" });
+        .json({ data: null, message: "Internal Server Error", status: "KO" });
     }
   }
 
@@ -156,9 +129,11 @@ class ClientController {
     try {
       let user = await prisma.user.findUnique({ where: { id: idUser } });
       if (!user) {
-        return res
-          .status(404)
-          .json({ data: [], message: "Utilisateur non trouvé", status: "KO" });
+        return res.status(404).json({
+          data: null,
+          message: "Utilisateur non trouvé",
+          status: "KO",
+        });
       }
 
       password = await hashPassword(password);
@@ -167,24 +142,22 @@ class ClientController {
         where: { id: idUser },
         data: { password },
       });
+
       delete (user as Partial<User>).password;
 
       res.json({
-        data: [
-          {
-            user,
-          },
-        ],
+        data: {
+          user,
+        },
         message: "Mot de passe modifié avec succès",
-
         status: "OK",
       });
     } catch (error) {
-      console.error(error);
-
-      res
-        .status(500)
-        .json({ message: "Erreur lors de l'ajout du contact", error });
+      res.status(500).json({
+        data: null,
+        status: "KO",
+        message: "Erreur lors de l'ajout du contact",
+      });
     }
   }
 
@@ -196,6 +169,7 @@ class ClientController {
       // Validation des champs
       if (!montant_recus && !telephone) {
         return res.status(400).json({
+          data: null,
           message:
             "Vous devez fournir soit le montant à envoyer soit le montant à recevoir.",
           status: "KO",
@@ -208,8 +182,9 @@ class ClientController {
 
       if (!userReceiver) {
         return res.status(404).json({
-          message: "Utilisateur non trouvé.",
+          message: "Cette utilisateur n'a pas de compte wave.",
           status: "KO",
+          data: null,
         });
       }
 
@@ -226,6 +201,7 @@ class ClientController {
         return res.status(400).json({
           message: "Solde insuffisant.",
           status: "KO",
+          data: null,
         });
       }
 
@@ -264,14 +240,38 @@ class ClientController {
       // });
 
       res.status(201).json({
-        data: transaction,
+        data: { transaction },
         message: "Transfert effectué avec succès.",
         status: "OK",
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: "Erreur lors du transfert", error });
+      res.status(500).json({
+        message: "Erreur lors du transfert",
+        data: null,
+        status: "KO",
+      });
     }
+  }
+
+  async getFrais(req: ControllerRequest, res: Response): Promise<void> {
+    const frais = await prisma.frais.findFirst({
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!frais) {
+      res.status(404).json({
+        message: "Aucun frais trouvé",
+        data: null,
+        status: "KO",
+      });
+    }
+
+    res.status(200).json({
+      status: "OK",
+      data: { frais },
+      message: "Frais récupérés avec succès.",
+    });
   }
 
   async getAllBanques(req: ControllerRequest, res: Response): Promise<void> {
@@ -286,13 +286,15 @@ class ClientController {
         },
       });
       res.status(200).json({
-        success: true,
-        data: banques,
+        status: "OK",
+        data: { banques },
+        message: "Banques récupérées avec succès.",
       });
     } catch (error) {
       console.error("Erreur lors de la récupération des banques :", error);
       res.status(500).json({
-        success: false,
+        data: null,
+        success: "KO",
         message: "Erreur lors de la récupération des banques.",
       });
     }
@@ -315,21 +317,23 @@ class ClientController {
 
       if (!banque) {
         res.status(404).json({
-          success: false,
+          status: "KO",
           message: "Banque non trouvée.",
+          data: null,
         });
         return;
       }
 
       res.status(200).json({
-        success: true,
+        status: "OK",
         data: { banque, user_banque: banque.userBanques },
         message: "Banque récupérée avec succès.",
       });
     } catch (error) {
       console.error("Erreur lors de la récupération de la banque :", error);
       res.status(500).json({
-        success: false,
+        data: null,
+        status: "KO",
         message: "Erreur lors de la récupération de la banque.",
       });
     }
@@ -342,8 +346,9 @@ class ClientController {
     // Validation des données
     if (!libelle || !logo) {
       res.status(400).json({
-        success: false,
+        status: "KO",
         message: "Le libelle et le logo sont requis.",
+        data: null,
       });
       return;
     }
@@ -359,29 +364,34 @@ class ClientController {
       });
 
       res.status(201).json({
-        success: true,
-        data: newBanque,
+        status: "OK",
+        data: { newBanque },
         message: "Banque créée avec succès.",
       });
     } catch (error) {
       console.error("Erreur lors de la création de la banque :", error);
       res.status(500).json({
-        success: false,
+        status: "KO",
         message: "Erreur lors de la création de la banque.",
+        data: null,
       });
     }
   }
 
-  // Method to get all fournisseurs
   async getFournisseurs(req: ControllerRequest, res: Response) {
     try {
       const fournisseurs = await prisma.fournisseur.findMany();
-      res.status(200).json(fournisseurs);
+      res.status(200).json({
+        data: { fournisseurs },
+        status: "OK",
+        message: "Fournisseurs récupérés avec succès.",
+      });
     } catch (error) {
-      console.error("Error fetching fournisseurs:", error);
-      res
-        .status(500)
-        .json({ message: "An error occurred while fetching fournisseurs." });
+      res.status(500).json({
+        data: null,
+        status: "KO",
+        message: "An error occurred while fetching fournisseurs.",
+      });
     }
   }
 
@@ -390,7 +400,11 @@ class ClientController {
     const { fournisseurId, typeFournisseur, referentiel, montant } = req.body;
 
     if (!fournisseurId || !montant || !typeFournisseur) {
-      return res.status(400).json({ message: "Invalid request body" });
+      return res.status(400).json({
+        status: "KO",
+        data: null,
+        message: "Invalid request body",
+      });
     }
 
     try {
@@ -404,20 +418,27 @@ class ClientController {
       if (typeFournisseur === "facture") {
         if (!referentiel) {
           return res.status(400).json({
+            status: "KO",
+            data: null,
             message: "Referentiel is required for TypeFournisseur 'facture'",
           });
         }
 
         const subF = await prisma.subscribeFournisseur.findFirst({
           where: {
-            reference: referentiel,
+            AND: [
+              { reference: referentiel },
+              { fournisseur_id: parseInt(fournisseurId) },
+            ],
           },
         });
 
         if (!subF) {
-          res
-            .status(404)
-            .json({ message: "Ce referentiel n'existe pas", status: "KO" });
+          res.status(404).json({
+            data: null,
+            message: "Ce referentiel n'existe pas",
+            status: "KO",
+          });
         }
       }
 
@@ -428,21 +449,26 @@ class ClientController {
       });
 
       if (!wallet) {
-        return res
-          .status(404)
-          .json({ message: "Wallet not found", status: "KO" });
+        return res.status(404).json({
+          data: null,
+          message: "Wallet not found",
+          status: "KO",
+        });
       }
 
       if (wallet.solde < montant) {
-        return res
-          .status(400)
-          .json({ message: "Insufficient funds", status: "KO" });
+        return res.status(400).json({
+          data: null,
+          message: "Insufficient funds",
+          status: "KO",
+        });
       }
-      await prisma.transaction.create({
+
+      const transaction = await prisma.transaction.create({
         data: {
           sender_id: userId,
-          montant_envoye: montant,
-          montant_recus: montant,
+          montant_envoye: parseInt(montant),
+          montant_recus: parseInt(montant),
           type_transaction: "paiement",
           statut: "effectuer",
           receiver_id: fournisseur?.user.id!,
@@ -454,41 +480,47 @@ class ClientController {
           user_id: userId,
         },
         data: {
-          solde: wallet.solde - montant,
+          solde: wallet.solde - parseInt(montant),
         },
       });
 
-      res
-        .status(201)
-        .json({ message: "Payment processed successfully", montant });
+      res.status(201).json({
+        status: "OK",
+        message: "Payment processed successfully",
+        data: { transaction },
+      });
     } catch (error) {
-      console.error("Error processing payment:", error);
-      res
-        .status(500)
-        .json({ message: "An error occurred while processing the payment" });
+      res.status(500).json({
+        status: "KO",
+        data: null,
+        message: "An error occurred while processing the payment",
+      });
     }
   }
 
   async getAccueil(req: AuthenticatedRequest, res: Response) {
     try {
       if (!req.id) {
-        return res
-          .status(400)
-          .json({ message: "ID utilisateur manquant", status: "ERROR" });
+        return res.status(400).json({
+          data: null,
+          message: "ID utilisateur manquant",
+          status: "KO",
+        });
       }
 
       const userId = parseInt(req.id, 10);
 
       if (isNaN(userId)) {
-        return res
-          .status(400)
-          .json({ message: "ID utilisateur invalide", status: "ERROR" });
+        return res.status(400).json({
+          data: null,
+          message: "ID utilisateur invalide",
+          status: "KO",
+        });
       }
 
-      // Récupération des informations de l'utilisateur
       const user = await prisma.user.findUnique({
         where: {
-          id: userId, // Utilisation de userId pour la recherche
+          id: userId,
         },
         include: {
           wallet: true,
@@ -501,24 +533,29 @@ class ClientController {
       if (!user) {
         return res.status(404).json({
           message: "Utilisateur non trouvé",
-          status: "ERROR",
+          status: "KO",
+          data: null,
         });
       }
+      const base64QRCode = await QRCode.toDataURL(user.telephone, {
+        margin: 0,
+      });
 
       res.json({
         data: {
           user,
           wallet: user.wallet,
           user_banque: user.userBanques,
+          qr_code: base64QRCode,
         },
         message: "page d'accueil chargée",
         status: "OK",
       });
     } catch (error) {
-      console.error("Erreur lors du chargement de la page d'accueil :", error);
       res.status(500).json({
         message: "Erreur serveur",
-        status: "ERROR",
+        status: "KO",
+        data: null,
       });
     }
   }
@@ -528,19 +565,18 @@ class ClientController {
       // Vérification de l'authentification
       if (!req.id) {
         return res.status(401).json({
-          status: "error",
+          status: "KO",
           message: "Utilisateur non authentifié",
           data: null,
         });
       }
 
-      const { nom_contact, telephone_contact, montant } = req.body;
-      const user_id = parseInt(req.id); // Assurer que user_id est un entier
+      const { telephone, montant } = req.body;
+      const user_id = parseInt(req.id);
 
-      // Validation des champs requis
-      if (!nom_contact || !telephone_contact || !montant) {
+      if (!telephone || !montant) {
         return res.status(400).json({
-          status: "Ko",
+          status: "KO",
           message: "Tous les champs sont requis",
           data: null,
         });
@@ -553,15 +589,13 @@ class ClientController {
 
       if (!wallet || wallet.solde < montant) {
         return res.status(400).json({
-          status: "Ko",
+          status: "KO",
           message: "Solde insuffisant pour effectuer cette transaction",
           data: null,
         });
       }
 
-      // Exécution de la transaction
       const transaction = await prisma.$transaction(async (prisma) => {
-        // Création de la transaction
         const newTransaction = await prisma.transaction.create({
           data: {
             sender_id: user_id,
@@ -573,7 +607,6 @@ class ClientController {
           },
         });
 
-        // Mise à jour du portefeuille
         await prisma.wallet.update({
           where: { user_id: user_id },
           data: {
@@ -581,22 +614,20 @@ class ClientController {
           },
         });
 
-        // Création ou mise à jour du contact
-        await prisma.contact.create({
-          data: {
-            nom: nom_contact,
-            telephone: telephone_contact,
-            user_id: user_id,
-          },
-        });
+        // await prisma.contact.create({
+        //   data: {
+        //     nom: nom_contact,
+        //     telephone: telephone,
+        //     user_id: user_id,
+        //   },
+        // });
 
-        // Création de la notification
         await prisma.notification.create({
           data: {
             notifier_id: user_id,
             notified_id: user_id,
             titre: "Achat de crédit",
-            message: `Achat de crédit de ${montant} FCFA pour le numéro ${telephone_contact}`,
+            message: `Achat de crédit de ${montant} FCFA pour le numéro ${telephone}`,
             transaction_id: newTransaction.id,
           },
         });
@@ -605,20 +636,20 @@ class ClientController {
       });
 
       // Émission de l'événement WebSocket
-      io.emit("newTransaction", {
-        type: "recharge_credit",
-        data: transaction,
-      });
+      // io.emit("newTransaction", {
+      //   type: "recharge_credit",
+      //   data: transaction,
+      // });
 
       return res.status(201).json({
-        status: "success",
+        status: "OK",
         message: `Recharge de crédit de ${montant} FCFA effectuée avec succès`,
-        data: transaction,
+        data: { transaction },
       });
     } catch (error) {
       console.error("Erreur lors de la transaction de crédit:", error);
       return res.status(500).json({
-        status: "Ko",
+        status: "KO",
         message: "Erreur lors de la création de la transaction",
         data: null,
       });
@@ -627,10 +658,9 @@ class ClientController {
 
   async getContacts(req: ControllerRequest, res: Response) {
     try {
-      // Vérification de l'authentification
       if (!req.id) {
         return res.status(401).json({
-          status: "error",
+          status: "KO",
           message: "Utilisateur non authentifié",
           data: null,
         });
@@ -643,18 +673,46 @@ class ClientController {
       });
 
       return res.status(200).json({
-        status: "success",
+        status: "OK",
         message: "Contacts récupérés avec succès",
-        data: contacts,
+        data: { contacts },
       });
     } catch (error) {
-      console.error("Erreur lors de la récupération des contacts:", error);
       return res.status(500).json({
-        status: "error",
+        status: "KO",
         message: "Erreur lors de la récupération des contacts",
         data: null,
       });
     }
+  }
+
+  async getCompteByTelephone(req: ControllerRequest, res: Response) {
+    const { telephone } = req.params;
+    if (!telephone) {
+      return res.status(400).json({
+        status: "KO",
+        message: "Le numéro de téléphone est requis",
+        data: null,
+      });
+    }
+    const user = await prisma.user.findUnique({
+      where: { telephone },
+      include: { wallet: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        status: "KO",
+        message: "vous n'avez",
+        data: null,
+      });
+    }
+
+    return res.status(200).json({
+      status: "OK",
+      message: "Compte trouvé avec succès",
+      data: { user },
+    });
   }
 }
 
